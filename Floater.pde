@@ -1,76 +1,125 @@
-class Floater //Do NOT modify the Floater class! Make changes in the Spaceship class 
-{   
-  protected int corners;  //the number of corners, a triangular floater has 3   
-  protected int[] xCorners;   
-  protected int[] yCorners;   
-  protected int myColor;   
-  protected double myCenterX, myCenterY; //holds center coordinates   
-  protected double myXspeed, myYspeed; //holds the speed of travel in the x and y directions   
-  protected double myPointDirection; //holds current direction the ship is pointing in degrees    
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
-  //Accelerates the floater in the direction it is pointing (myPointDirection)   
-  public void accelerate (double dAmount)   
-  {          
-    //convert the current direction the floater is pointing to radians    
-    double dRadians =myPointDirection*(Math.PI/180);     
-    //change coordinates of direction of travel    
-    myXspeed += ((dAmount) * Math.cos(dRadians));    
-    myYspeed += ((dAmount) * Math.sin(dRadians));       
-  }   
-  public void turn (double degreesOfRotation)   
-  {     
-    //rotates the floater by a given number of degrees    
-    myPointDirection+=degreesOfRotation;   
-  }   
-  public void move ()   //move the floater in the current direction of travel
-  {      
-    //change the x and y coordinates by myXspeed and myYspeed       
-    myCenterX += myXspeed;    
-    myCenterY += myYspeed;     
+SpaceGame spaceGame; // Declare the main SpaceGame instance
 
-    //wrap around screen    
-    if(myCenterX >width)
-    {     
-      myCenterX = 0;    
-    }    
-    else if (myCenterX<0)
-    {     
-      myCenterX = width;    
-    }    
-    if(myCenterY >height)
-    {    
-      myCenterY = 0;    
-    } 
-    
-    else if (myCenterY < 0)
-    {     
-      myCenterY = height;    
-    }   
-  }   
-  public void show ()  //Draws the floater at the current position  
-  {             
-    fill(myColor);   
-    stroke(myColor);    
-    
-    //translate the (x,y) center of the ship to the correct position
-    translate((float)myCenterX, (float)myCenterY);
+void setup() {
+  size(800, 600); // Set up the canvas size
+  spaceGame = new SpaceGame();
+}
 
-    //convert degrees to radians for rotate()     
-    float dRadians = (float)(myPointDirection*(Math.PI/180));
-    
-    //rotate so that the polygon will be drawn in the correct direction
-    rotate(dRadians);
-    
-    //draw the polygon
+void draw() {
+  background(0); // Clear the screen with black
+  spaceGame.update();
+  spaceGame.display();
+}
+
+// SpaceGame class
+class SpaceGame {
+  private Spaceship ship;
+
+  SpaceGame() {
+    ship = new Spaceship();
+  }
+
+  void update() {
+    ship.move();
+  }
+
+  void display() {
+    ship.draw();
+  }
+
+  void handleInput(int key) {
+    if (key == UP) {
+      ship.accelerate();
+    }
+    if (key == LEFT) {
+      ship.turn(-5);
+    }
+    if (key == RIGHT) {
+      ship.turn(5);
+    }
+  }
+}
+
+void keyPressed() {
+  spaceGame.handleInput(keyCode);
+}
+
+// Floater base class
+class Floater {
+  protected float myCenterX, myCenterY; // Center coordinates
+  protected float myXspeed, myYspeed;  // Speed in x and y directions
+  protected float myPointDirection;   // Direction the floater is pointing
+  protected int corners;              // Number of corners
+  protected int[] xCorners, yCorners; // Corner coordinates relative to the center
+  protected color myColor;            // Color of the floater
+
+  Floater() {
+    myCenterX = width / 2.0;
+    myCenterY = height / 2.0;
+    myXspeed = 0;
+    myYspeed = 0;
+    myPointDirection = 0;
+    corners = 0;
+    xCorners = new int[0];
+    yCorners = new int[0];
+    myColor = color(255);
+  }
+
+  void move() {
+    myCenterX += myXspeed;
+    myCenterY += myYspeed;
+
+    // Wrap around the edges of the screen
+    if (myCenterX < 0) myCenterX += width;
+    if (myCenterX > width) myCenterX -= width;
+    if (myCenterY < 0) myCenterY += height;
+    if (myCenterY > height) myCenterY -= height;
+  }
+
+  void turn(float degrees) {
+    myPointDirection += degrees;
+  }
+
+  void draw() {
+    float radians = radians(myPointDirection);
+    int[] xPoints = new int[corners];
+    int[] yPoints = new int[corners];
+
+    for (int i = 0; i < corners; i++) {
+      xPoints[i] = (int) (xCorners[i] * cos(radians) - yCorners[i] * sin(radians) + myCenterX);
+      yPoints[i] = (int) (xCorners[i] * sin(radians) + yCorners[i] * cos(radians) + myCenterY);
+    }
+
+    fill(myColor);
+    stroke(255);
     beginShape();
-    for (int nI = 0; nI < corners; nI++)
-    {
-      vertex(xCorners[nI], yCorners[nI]);
+    for (int i = 0; i < corners; i++) {
+      vertex(xPoints[i], yPoints[i]);
     }
     endShape(CLOSE);
+  }
+}
 
-    //"unrotate" and "untranslate" in reverse order
-    rotate(-1*dRadians);
-    translate(-1*(float)myCenterX, -1*(float)myCenterY);
-  }   
-} 
+// Spaceship subclass
+class Spaceship extends Floater {
+  Spaceship() {
+    corners = 3;
+    xCorners = new int[] { -8, 16, -8 };
+    yCorners = new int[] { -8, 0, 8 };
+    myColor = color(255, 0, 0); // Red color
+    myCenterX = width / 2.0;   // Start in the middle of the screen
+    myCenterY = height / 2.0;
+    myXspeed = 0;
+    myYspeed = 0;
+    myPointDirection = 0; // Initially pointing to the right
+  }
+
+  void accelerate() {
+    float radians = radians(myPointDirection);
+    myXspeed += cos(radians) * 0.2; // Adjust the acceleration
+    myYspeed += sin(radians) * 0.2;
+  }
+}
